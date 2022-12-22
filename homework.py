@@ -1,24 +1,23 @@
+from dataclasses import asdict, dataclass
+
+
+@dataclass
 class InfoMessage:
     """Информационное сообщение о тренировке."""
-    def __init__(self,
-                 training_type,
-                 duration,
-                 distance,
-                 speed,
-                 calories) -> None:
-        self.training_type = training_type
-        self.duration = duration
-        self.distance = distance
-        self.speed = speed
-        self.calories = calories
+    MESSAGE_CONST = ('Тип тренировки: {training_type};'
+                     ' Длительность: {duration:.3f} ч.;'
+                     ' Дистанция: {distance:.3f} км;'
+                     ' Ср. скорость: {speed:.3f} км/ч;'
+                     ' Потрачено ккал: {calories:.3f}.')
+    training_type: str
+    duration: float
+    distance: float
+    speed: float
+    calories: float
 
     def get_message(self) -> str:
         """Возвращает строку сообщения."""
-        return (f'Тип тренировки: {self.training_type};'
-                f' Длительность: {self.duration:.3f} ч.;'
-                f' Дистанция: {self.distance:.3f} км;'
-                f' Ср. скорость: {self.speed:.3f} км/ч;'
-                f' Потрачено ккал: {self.calories:.3f}.')
+        return self.MESSAGE_CONST.format(**asdict(self))
 
 
 class Training:
@@ -48,7 +47,8 @@ class Training:
 
     def get_spent_calories(self) -> float:
         """Получить количество затраченных калорий."""
-        pass
+        raise (NotImplementedError('Определите get_spent_calories()'
+                                   'в Training!'))
 
     def show_training_info(self) -> InfoMessage:
         """Вернуть информационное сообщение о выполненной тренировке."""
@@ -66,13 +66,7 @@ class Running(Training):
     CALORIES_MEAN_SPEED_MULTIPLIER = 18
     CALORIES_MEAN_SPEED_SHIFT = 1.79
 
-    def __init__(self,
-                 action: int,
-                 duration: float,
-                 weight: float) -> None:
-        super().__init__(action, duration, weight)
-
-    def get_spent_calories(self):
+    def get_spent_calories(self) -> float:
         return ((self.CALORIES_MEAN_SPEED_MULTIPLIER * self.get_mean_speed()
                 + self.CALORIES_MEAN_SPEED_SHIFT)
                 * self.weight / self.M_IN_KM * (self.duration * self.MIN_IN_H))
@@ -91,7 +85,7 @@ class SportsWalking(Training):
         super().__init__(action, duration, weight)
         self.height = height
 
-    def get_spent_calories(self):
+    def get_spent_calories(self) -> float:
         return ((self.CALORIES_WEIGHT_MULTIPLIER * self.weight
                 + ((self.get_mean_speed() * self.KMH_IN_MSEC)**2 / (self.height
                  / self.CM_IN_M))
@@ -102,8 +96,8 @@ class SportsWalking(Training):
 class Swimming(Training):
     """Тренировка: плавание."""
     LEN_STEP = 1.38
-    CALORIES_COEFFICIENT_SWIMM_1 = 1.1
-    CALORIES_COEFFICIENT_SWIMM_2 = 2
+    CALORIES_WEIGHT_MULTIPLIER = 1.1
+    CALORIES_SPEED_HEIGHT_MULTIPLIER = 2
 
     def __init__(self,
                  action: int,
@@ -115,13 +109,13 @@ class Swimming(Training):
         self.length_pool = length_pool
         self.count_pool = count_pool
 
-    def get_mean_speed(self):
+    def get_mean_speed(self) -> float:
         return (self.length_pool * self.count_pool / self.M_IN_KM
                 / self.duration)
 
-    def get_spent_calories(self):
-        return ((self.get_mean_speed() + self.CALORIES_COEFFICIENT_SWIMM_1)
-                * self.CALORIES_COEFFICIENT_SWIMM_2
+    def get_spent_calories(self) -> float:
+        return ((self.get_mean_speed() + self.CALORIES_WEIGHT_MULTIPLIER)
+                * self.CALORIES_SPEED_HEIGHT_MULTIPLIER
                 * self.weight * self.duration)
 
 
@@ -133,7 +127,11 @@ def read_package(workout_type: str, data: list) -> Training:
         'WLK': SportsWalking
     }
     training: Training = workout_classes[workout_type](*data)
-    return training
+    try:
+        return training
+    except KeyError:
+        print('Такой тренировки не существует.'
+              'Попробуйте еще раз.')
 
 
 def main(training: Training) -> None:
