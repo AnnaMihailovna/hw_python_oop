@@ -36,7 +36,7 @@ source venv/bin/activate
 ```
 pip install -r requirements.txt
 ```
-  * Запустите из терминалв командой
+  * Запустите из терминале командой
 ```
 python homework.py
 ```
